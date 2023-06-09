@@ -1,0 +1,24 @@
+{
+  "name": "coin-mingle-contracts",
+  "version": "1.0.0",
+  "description": "CoinMingle - the ultimate decentralized platform powered by the FANTOM blockchain, with its cutting-edge Automated Market Maker (AMM) smart contract.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
+  "keywords": [
+    "CoinMingle",
+    "ERC20",
+    "Fantom"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "hardhat": "^2.14.1"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@openzeppelin/contracts": "^4.9.0",
+    "@openzeppelin/contracts-upgradeable": "^4.9.0"
+  }
+}
