@@ -4,13 +4,16 @@ pragma solidity 0.8.10;
 /// @dev Importing openzeppelin stuffs.
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Custom errors.
 error InvalidAddress();
 error AccessForbidden();
+error InsifficientLiquidity();
+error InsufficientTokenBalanceToTransfer();
 
 contract CoinMingleLP is Initializable, ERC20Upgradeable {
-    /// @dev Tracking the CoinMingleRouter address.
+    /// @dev Tracking the coinMingleRouter address.
     address public CoinMingleRouter;
     /// @dev Tracking the tokenA address.
     address public tokenA;
@@ -22,6 +25,8 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
     /// @dev Tracking the reserveB of tokenB.
     uint256 private _reserveB;
 
+    uint16 private MINIMUM_LIQUIDITY;
+
     /// @dev Modifier to forbid the access.
     modifier onlyRouter() {
         /// @dev Revert if caller is not the CoinMingleRouter
@@ -29,28 +34,61 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         _;
     }
 
+    /// @dev Events
+    /**
+     * @dev event LiquidityMinted: will be emitted when the liquidity is minted to liquidity provider
+     * @param liquidityProvider: The person who is adding liquidity to the pool
+     * @param tokenAAmount : The amount of token A added by liquidity provider in the pool
+     * @param tokenBAmount : The amount of token B added by liquidity provider in the pool
+     */
+
+    event LiquidityMinted(
+        address indexed liquidityProvider,
+        uint256 tokenAAmount,
+        uint256 tokenBAmount
+    );
+
+    /// @dev Events
+    /**
+     * @dev event LiquidityBurned: will be emitted when the liquidity is burned
+     * @param liquidityProvider: The person who is adding liquidity to the pool
+     * @param tokenAAmount : The amount of token A added taken back by liquidity provider
+     * @param tokenBAmount : The amount of token B added taken back by liquidity provider
+     */
+
+    event LiquidityBurned(
+        address indexed liquidityProvider,
+        uint256 tokenAAmount,
+        uint256 tokenBAmount
+    );
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     /**
-     * @dev Initializing the CoinMingleRouter, ERC20 token and Pair tokens (tokenA & tokenB).
+     * @dev Initializing the coinMingleRouter, ERC20 token and Pair tokens (tokenA & tokenB).
      * @param _tokenA: The first token for pair.
      * @param _tokenB: The second token for pair
      */
-    function initialize(address _tokenA, address _tokenB) external initializer {
+    function initialize(
+        address _tokenA,
+        address _tokenB,
+        uint16 _MINIMUM_LIQUIDITY
+    ) external initializer {
         /// @dev Token address checking.
         if (_tokenA == address(0) || _tokenB == address(0))
             revert InvalidAddress();
         /// @dev Initializing the ERC20.
-        __ERC20_init("CoinMingleSwap Liquidity Provider", "CMLP");
+        __ERC20_init("CoinMingle Liquidity Provider", "CMLP");
 
-        /// @dev Initializing the CoinMingleRouter.
+        /// @dev Initializing the coinMingleRouter.
         CoinMingleRouter = msg.sender;
         /// @dev Initializing the tokenA & tokenB for the pool.
         tokenA = _tokenA;
         tokenB = _tokenB;
+        MINIMUM_LIQUIDITY = _MINIMUM_LIQUIDITY;
     }
 
     /**
@@ -153,5 +191,21 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
     {
         reserveA = _reserveA;
         reserveB = _reserveB;
+    }
+
+    /**
+     * @dev Helper function to calculate square root of a number
+     */
+    function sqrt(uint256 y) private pure returns (uint256 z) {
+        if (y > 3) {
+            z = y;
+            uint256 x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
     }
 }
