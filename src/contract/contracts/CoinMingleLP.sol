@@ -58,9 +58,42 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
      * @param _to: The address to whom the CoinMingleLP share will mint.
      * @return liquidity The amount of CoinMingleLP token minted.
      */
-    function mint(
-        address _to
-    ) external onlyRouter returns (uint256 liquidity) {}
+    function mint(address _to) external onlyRouter returns (uint256 liquidity) {
+        /// @dev Getting the new amount of tokens in pool
+        uint256 _newReserveA = IERC20(tokenA).balanceOf(address(this));
+        uint256 _newReserveB = IERC20(tokenB).balanceOf(address(this));
+
+        /// @dev Calculating the amount of both token added by the user
+        uint256 tokenAAmountAdded = _newReserveA - _reserveA;
+        uint256 tokenBAmountAdded = _newReserveA - _reserveB;
+
+        /// @dev getting the total supply of the pair token
+        uint256 _totalSupply = totalSupply();
+
+        /// @dev Calculating the Amount of liquidity to be minted
+        uint256 product = tokenAAmountAdded * tokenBAmountAdded;
+        liquidity = sqrt(product);
+
+        /// @dev Cheking if the liquidity is added for the first time  if yes then lock liquidity == MINIMUM_LIQUIDITY permanently
+        if (_totalSupply == 0) {
+            liquidity -= MINIMUM_LIQUIDITY;
+            _mint(address(0), MINIMUM_LIQUIDITY);
+        }
+
+        /// @dev Checking if the lqiuidity minted is more than 0
+
+        if (liquidity == 0) revert InsifficientLiquidity();
+
+        /// @dev Miniting the liquidity to _to address
+        _mint(_to, liquidity);
+
+        /// @dev Updating the reserve
+        _reserveA = _newReserveA;
+        _reserveB = _newReserveB;
+
+        /// @dev emitting the event
+        emit LiquidityMinted(_to, tokenAAmountAdded, tokenBAmountAdded);
+    }
 
     /**
      * @dev Removing liquidity tokens as per share given.
@@ -70,7 +103,43 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
      */
     function burn(
         address _to
-    ) external onlyRouter returns (uint256 amountA, uint256 amountB) {}
+    ) external onlyRouter returns (uint256 amountA, uint256 amountB) {
+        /// @dev Initializing the token instances to save gas
+        IERC20 tokenAInstance = IERC20(tokenA);
+        IERC20 tokenBInstance = IERC20(tokenB);
+
+        /// @dev getting the amount of liquidity send by the provider to this contract
+        uint256 liquidity = balanceOf(address(this));
+
+        /// @dev getting totalSupply ( Save gas )
+        uint256 _totalSupply = totalSupply();
+
+        /// @dev Calculating the amount of both tokens this lp contract holds
+        uint256 tokenAAmount = tokenAInstance.balanceOf(address(this));
+        uint256 tokenBAmount = tokenBInstance.balanceOf(address(this));
+
+        /// @dev Calculating the amount to refund back to the provider based on the share of the provider in the pool
+        amountA = (liquidity * tokenAAmount) / _totalSupply;
+        amountB = (liquidity * tokenBAmount) / _totalSupply;
+
+        /// @dev Checking if the amount is greater than 0
+        if (amountA == 0 || amountB == 0)
+            revert InsufficientTokenBalanceToTransfer();
+
+        /// @dev burning the liquidity provided by the provider to this lp contract
+        _burn(address(this), liquidity);
+
+        /// @dev transfering both the tokens to the provider
+        tokenAInstance.transfer(_to, amountA);
+        tokenBInstance.transfer(_to, amountB);
+
+        /// @dev Updating the reserve
+        _reserveA -= amountA;
+        _reserveB -= amountB;
+
+        /// @dev Emitting the event
+        emit LiquidityBurned(_to, amountA, amountB);
+    }
 
     /**
      * @dev Returns tha actual amount of reserves available for tokenA & tokenB.
