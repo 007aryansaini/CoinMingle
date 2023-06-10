@@ -374,7 +374,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address pair = getPair[_path[0]][_path[1]];
 
         IERC20(_path[0]).transferFrom(msg.sender, pair, _amountIn);
-        _swap(_amountIn, amountOut, to);
+
         ICoinMingle(pair).swap(_amountIn, amountOut, _to);
     }
 
