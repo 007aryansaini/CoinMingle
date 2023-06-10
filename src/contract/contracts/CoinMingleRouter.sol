@@ -365,7 +365,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address[] calldata _path,
         address _to,
         uint256 _deadline
-    ) external nonReentrant ensure(deadline) returns (uint256 _amountOut) {
+    ) external nonReentrant ensure(_deadline) returns (uint256 _amountOut) {
         if (_to == address(0)) revert InvalidAddress();
         _amountOut = getAmountOut(_amountIn, _path);
 
@@ -375,7 +375,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
 
         IERC20(_path[0]).transferFrom(msg.sender, pair, _amountIn);
 
-        ICoinMingle(pair).swap(_amountIn, amountOut, _to);
+        ICoinMingle(pair).swap(_amountIn, _amountOut, _to);
     }
 
     /**

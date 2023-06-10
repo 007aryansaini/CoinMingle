@@ -30,6 +30,14 @@ interface ICoinMingle is IERC20 {
     ) external returns (uint256 amountA, uint256 amountB);
 
     /**
+     * @dev Swap tokenA for tokenB
+     * @param _amountIn: The amount of tokenA being swapped
+     * @param _amountOut The amount of tokenB recieved after swapping.
+     * @param _to address to whom swapped tokens will be transfered
+     */
+    function swap(uint256 _amountIn, uint256 _amountOut, address _to) external;
+
+    /**
      * @dev Returns tha actual amount of reserves available for tokenA & tokenB.
      * @return reserveA The tokenA amount.
      * @return reserveB The tokenB amount.

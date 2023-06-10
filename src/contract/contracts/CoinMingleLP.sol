@@ -195,9 +195,9 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
     /**
      * @dev Swap tokens fucntion
+     * @param _amountIn The amount of user is willing to swap
+     * @param _amountOut The amount of tokenB user will receive after swap
      * @param _to: The address to whom the tokens will transferred.
-     * @return amountA The amount of tokenA removed from pool.
-     * @return amountB The amount of tokenB removed from pool
      */
     function swap(
         uint256 _amountIn,
