@@ -20,6 +20,11 @@ error IdenticalAddress();
 error InsufficientAmount();
 error ExcessiveLiquidity();
 error InsufficientLiquidity();
+error TokenZeroAmount();
+error InvalidPath();
+error PairDoesNotExist();
+error InsufficientPoolAmount();
+error HighSlippage();
 
 contract CoinMingleRouter is Ownable, ReentrancyGuard {
     /// @dev Tracking the Wrapped FTM contract address.
@@ -90,8 +95,10 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
      */
     constructor(address _coinMingleLPImplementation, address _wrappedFTM) {
         /// @dev Validations.
-        if (_coinMingleLPImplementation == address(0) || _wrappedFTM == address(0))
-            revert InvalidAddress();
+        if (
+            _coinMingleLPImplementation == address(0) ||
+            _wrappedFTM == address(0)
+        ) revert InvalidAddress();
         /// @dev Initializing the implementation & WrappedFTM.
         CoinMingleImplementation = _coinMingleLPImplementation;
         WrappedFTM = IWFTM(_wrappedFTM);
@@ -281,6 +288,94 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         IERC20(_token).transfer(_to, amountToken);
         (bool success, ) = _to.call{value: amountFTM}("");
         require(success);
+    }
+
+    /**
+     * @dev Function to calculate the amount of tokenB required when tokenA is given for swap with tokenB
+     * @param _tokenAAmount : The amount of tokenA in at path[0] that a person is swapping for tokenB
+     * @param _path: Address array of the two tokens. path[0]= The address of token that will be swapped (input) path[1] = The address of token that will be returned after  swap (output)
+     * @return _tokenBAmount : The amount of tokenB received after swapping tokenA
+     */
+
+    function getAmountOut(
+        uint256 _tokenAAmount,
+        address[] memory _path
+    ) public view returns (uint256 _tokenBAmount) {
+        /// @dev validating input fields
+        if (_tokenAAmount == 0) revert TokenZeroAmount();
+        if (_path.length != 2) revert InvalidPath();
+
+        /// @dev getting the pair address based on address of two tokens
+        address pair = getPair[_path[0]][_path[1]];
+        if (pair == address(0)) revert PairDoesNotExist();
+
+        /// @dev getting the reserves of two tokens in pool
+        uint256 _reserveA;
+        uint256 _reserveB;
+        (_reserveA, _reserveB) = ICoinMingle(pair).getReserves();
+
+        /// @dev calculating tokenB based on tokenA using p*q=k
+
+        uint256 tokenAAfter = _reserveA + _tokenAAmount;
+        uint256 tokenBAfter = (_reserveA * _reserveB) / tokenAAfter;
+
+        _tokenBAmount = _reserveB - tokenBAfter;
+
+        /// @dev We cannot make the amount of tokenB zero in the pool
+        if (_tokenBAmount == _reserveB) _tokenBAmount--;
+    }
+
+    /**
+     * @dev Function to calculate the amount of input token required when output tokens are given
+     * @param _tokenBAmount : The amount of tokenB required
+     * @param _path: Address array of the two tokens. path[0]= The address of token that will be swapped (input) path[1] = The address of token that will be returned after  swap (output)
+     * @return _tokenAAmount : The amount of tokenA required to get input amount of B
+     */
+
+    function getAmountIn(
+        uint256 _tokenBAmount,
+        address[] memory _path
+    ) public view returns (uint256 _tokenAAmount) {
+        /// @dev validating input fields
+        if (_tokenBAmount == 0) revert TokenZeroAmount();
+        if (_path.length != 2) revert InvalidPath();
+
+        /// @dev getting the pair address based on address of two tokens
+        address pair = getPair[_path[0]][_path[1]];
+        if (pair == address(0)) revert PairDoesNotExist();
+
+        /// @dev getting the reserves of two tokens in pool
+        uint256 _reserveA;
+        uint256 _reserveB;
+        (_reserveA, _reserveB) = ICoinMingle(pair).getReserves();
+
+        /// @dev Checking the pool have more tokenB as required by the user
+        if (_tokenBAmount >= _reserveB) revert InsufficientPoolAmount();
+
+        /// @dev calculating tokenA required to get input amout of tokenB based on p*q=k
+
+        uint256 tokenBAfter = _reserveB - _tokenBAmount;
+        uint256 tokenAafter = (_reserveA * _reserveB) / tokenBAfter;
+        _tokenAAmount = tokenAafter - _reserveA;
+    }
+
+    function swapExactTokensForTokens(
+        uint256 _amountIn,
+        uint256 _amountOutMin,
+        address[] calldata _path,
+        address _to,
+        uint256 _deadline
+    ) external nonReentrant ensure(deadline) returns (uint256 _amountOut) {
+        if (_to == address(0)) revert InvalidAddress();
+        _amountOut = getAmountOut(_amountIn, _path);
+
+        if (_amountOut < _amountOutMin) revert HighSlippage();
+
+        address pair = getPair[_path[0]][_path[1]];
+
+        IERC20(_path[0]).transferFrom(msg.sender, pair, _amountIn);
+        _swap(_amountIn, amountOut, to);
+        ICoinMingle(pair).swap(_amountIn, amountOut, _to);
     }
 
     /**

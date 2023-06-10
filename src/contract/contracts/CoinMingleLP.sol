@@ -62,6 +62,20 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         uint256 tokenBAmount
     );
 
+    /// @dev Events
+    /**
+     * @dev event LiquidityBurned: will be emitted when the liquidity is burned
+     * @param _to: The person to whom swapped tokens are minted
+     * @param tokenAAmount : The amount of token A given
+     * @param tokenBAmount : The amount of token B received
+     */
+
+    event TokensSwapped(
+        address indexed _to,
+        uint256 tokenAAmount,
+        uint256 tokenBAmount
+    );
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -177,6 +191,25 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
         /// @dev Emitting the event
         emit LiquidityBurned(_to, amountA, amountB);
+    }
+
+    /**
+     * @dev Swap tokens fucntion
+     * @param _to: The address to whom the tokens will transferred.
+     * @return amountA The amount of tokenA removed from pool.
+     * @return amountB The amount of tokenB removed from pool
+     */
+    function swap(
+        uint256 _amountIn,
+        uint256 _amountOut,
+        address _to
+    ) external onlyRouter {
+        _reserveA = IERC20(tokenA).balanceOf(address(this));
+        _reserveB -= _amountOut;
+
+        IERC20(tokenB).transfer(_to, _amountOut);
+
+        emit TokensSwapped(_to, _amountIn, _amountOut);
     }
 
     /**
