@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev Custom errors.
 error InvalidAddress();
 error AccessForbidden();
-error InsifficientLiquidity();
+error InsufficientLiquidity();
 error InsufficientTokenBalanceToTransfer();
 
 contract CoinMingleLP is Initializable, ERC20Upgradeable {
@@ -24,7 +24,9 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
     uint256 private _reserveA;
     /// @dev Tracking the reserveB of tokenB.
     uint256 private _reserveB;
-
+    /// @dev The algorithmic constant (K = _reserveA * _reserveB)
+    uint256 public K;
+    /// @dev The minimum amount of LP blocked.
     uint16 private MINIMUM_LIQUIDITY;
 
     /// @dev Modifier to forbid the access.
@@ -44,8 +46,8 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
     event LiquidityMinted(
         address indexed liquidityProvider,
-        uint256 tokenAAmount,
-        uint256 tokenBAmount
+        uint256 indexed tokenAAmount,
+        uint256 indexed tokenBAmount
     );
 
     /// @dev Events
@@ -58,8 +60,8 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
     event LiquidityBurned(
         address indexed liquidityProvider,
-        uint256 tokenAAmount,
-        uint256 tokenBAmount
+        uint256 indexed tokenAAmount,
+        uint256 indexed tokenBAmount
     );
 
     /// @dev Events
@@ -72,8 +74,8 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
     event TokensSwapped(
         address indexed _to,
-        uint256 tokenAAmount,
-        uint256 tokenBAmount
+        uint256 indexed tokenAAmount,
+        uint256 indexed tokenBAmount
     );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -86,11 +88,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
      * @param _tokenA: The first token for pair.
      * @param _tokenB: The second token for pair
      */
-    function initialize(
-        address _tokenA,
-        address _tokenB,
-        uint16 _MINIMUM_LIQUIDITY
-    ) external initializer {
+    function initialize(address _tokenA, address _tokenB) external initializer {
         /// @dev Token address checking.
         if (_tokenA == address(0) || _tokenB == address(0))
             revert InvalidAddress();
@@ -102,7 +100,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         /// @dev Initializing the tokenA & tokenB for the pool.
         tokenA = _tokenA;
         tokenB = _tokenB;
-        MINIMUM_LIQUIDITY = _MINIMUM_LIQUIDITY;
+        MINIMUM_LIQUIDITY = 1e3;
     }
 
     /**
@@ -126,22 +124,23 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         uint256 product = tokenAAmountAdded * tokenBAmountAdded;
         liquidity = sqrt(product);
 
-        /// @dev Cheking if the liquidity is added for the first time  if yes then lock liquidity == MINIMUM_LIQUIDITY permanently
+        /// @dev Checking if the liquidity is added for the first time.
         if (_totalSupply == 0) {
+            // then lock liquidity == MINIMUM_LIQUIDITY permanently
             liquidity -= MINIMUM_LIQUIDITY;
             _mint(address(0), MINIMUM_LIQUIDITY);
         }
 
-        /// @dev Checking if the lqiuidity minted is more than 0
+        /// @dev Checking if the liquidity minted is more than 0
+        if (liquidity == 0) revert InsufficientLiquidity();
 
-        if (liquidity == 0) revert InsifficientLiquidity();
-
-        /// @dev Miniting the liquidity to _to address
+        /// @dev Minting the liquidity to _to address
         _mint(_to, liquidity);
 
-        /// @dev Updating the reserve
+        /// @dev Updating the reserve & K
         _reserveA = _newReserveA;
         _reserveB = _newReserveB;
+        K = _newReserveA * _newReserveB;
 
         /// @dev emitting the event
         emit LiquidityMinted(_to, tokenAAmountAdded, tokenBAmountAdded);
@@ -150,66 +149,119 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
     /**
      * @dev Removing liquidity tokens as per share given.
      * @param _to: The address to whom the tokens will transferred.
-     * @return amountA The amount of tokenA removed from pool.
-     * @return amountB The amount of tokenB removed from pool
+     * @return _amountA The amount of tokenA removed from pool.
+     * @return _amountB The amount of tokenB removed from pool
      */
     function burn(
         address _to
-    ) external onlyRouter returns (uint256 amountA, uint256 amountB) {
-        /// @dev Initializing the token instances to save gas
-        IERC20 tokenAInstance = IERC20(tokenA);
-        IERC20 tokenBInstance = IERC20(tokenB);
-
-        /// @dev getting the amount of liquidity send by the provider to this contract
+    ) external onlyRouter returns (uint256 _amountA, uint256 _amountB) {
+        /// @dev getting the amount of liquidity send by the provider to this contract.
         uint256 liquidity = balanceOf(address(this));
-
         /// @dev getting totalSupply ( Save gas )
         uint256 _totalSupply = totalSupply();
 
-        /// @dev Calculating the amount of both tokens this lp contract holds
-        uint256 tokenAAmount = tokenAInstance.balanceOf(address(this));
-        uint256 tokenBAmount = tokenBInstance.balanceOf(address(this));
+        /// @dev Calculating the amount to refund back to the provider based on the share of the provider in the pool.
+        _amountA = (liquidity * _reserveA) / _totalSupply;
+        _amountB = (liquidity * _reserveB) / _totalSupply;
 
-        /// @dev Calculating the amount to refund back to the provider based on the share of the provider in the pool
-        amountA = (liquidity * tokenAAmount) / _totalSupply;
-        amountB = (liquidity * tokenBAmount) / _totalSupply;
-
-        /// @dev Checking if the amount is greater than 0
-        if (amountA == 0 || amountB == 0)
+        /// @dev Checking if the amount is greater than 0.
+        if (_amountA == 0 || _amountB == 0)
             revert InsufficientTokenBalanceToTransfer();
 
         /// @dev burning the liquidity provided by the provider to this lp contract
         _burn(address(this), liquidity);
 
-        /// @dev transfering both the tokens to the provider
-        tokenAInstance.transfer(_to, amountA);
-        tokenBInstance.transfer(_to, amountB);
+        /// @dev Updating the reserve & K
+        _reserveA -= _amountA;
+        _reserveB -= _amountB;
+        K = _reserveA * _reserveB;
 
-        /// @dev Updating the reserve
-        _reserveA -= amountA;
-        _reserveB -= amountB;
+        /// @dev transferring both the tokens to the provider
+        IERC20(tokenA).transfer(_to, _amountA);
+        IERC20(tokenB).transfer(_to, _amountB);
 
         /// @dev Emitting the event
-        emit LiquidityBurned(_to, amountA, amountB);
+        emit LiquidityBurned(_to, _amountA, _amountB);
     }
 
     /**
-     * @dev Swap tokens fucntion
-     * @param _amountIn The amount of user is willing to swap
-     * @param _amountOut The amount of tokenB user will receive after swap
+     * @dev Swap tokens for other tokens
      * @param _to: The address to whom the tokens will transferred.
+     * @return _amountOut The amount of token user got after swapping.
      */
     function swap(
-        uint256 _amountIn,
-        uint256 _amountOut,
         address _to
-    ) external onlyRouter {
-        _reserveA = IERC20(tokenA).balanceOf(address(this));
-        _reserveB -= _amountOut;
+    ) external onlyRouter returns (uint256 _amountOut) {
+        /// @dev Getting the current balance of both tokenA & tokenB
+        uint256 _balanceOfTokenA = IERC20(tokenA).balanceOf(address(this));
+        uint256 _balanceOfTokenB = IERC20(tokenB).balanceOf(address(this));
 
-        IERC20(tokenB).transfer(_to, _amountOut);
+        /// @dev Getting the reserves (gas saving)
+        (uint256 reserveA, uint256 reserveB) = getReserves();
 
+        /// @dev Getting the token which user wants to swap.
+        address _tokenSwapping = _balanceOfTokenA > reserveA ? tokenA : tokenB;
+
+        //// @dev Getting the actual amount of token user wants to swap.
+        uint256 _amountIn;
+        /// @dev Swapping the tokenA for tokenB
+        if (_tokenSwapping == tokenA) {
+            /// @dev Getting the actual balance trader deposited.
+            _amountIn = _balanceOfTokenA - reserveA;
+            /// @dev Calculating the actual amount out as per tokenA
+            _amountOut = getAmountOut(tokenA, _amountIn);
+            /// @dev Updating the both reserve.
+            _reserveA += _amountIn;
+            _reserveB -= _amountOut;
+        }
+        /// @dev Swapping the tokenB for tokenA
+        else {
+            /// @dev Getting the actual balance trader deposited.
+            _amountIn = _balanceOfTokenB - reserveB;
+            /// @dev Calculating the actual amount out as per tokenB
+            _amountOut = getAmountOut(tokenB, _amountIn);
+            /// @dev Updating the both reserve.
+            _reserveB += _amountIn;
+            _reserveA -= _amountOut;
+        }
+
+        /// @dev transferring the tokens to the address.
+        IERC20(_tokenSwapping).transfer(_to, _amountOut);
+        /// @dev Emitting the event
         emit TokensSwapped(_to, _amountIn, _amountOut);
+    }
+
+    /**
+     * @dev Getting the actual amount of token you will get on the behalf of amountIn & tokenIn.
+     * @param _tokenIn: The token you want to swap.
+     * @param _amountIn: The amount of token you want to swap.
+     */
+    function getAmountOut(
+        address _tokenIn,
+        uint256 _amountIn
+    ) public view returns (uint256 _amountOut) {
+        /// @dev Token Address checking.
+        if (_tokenIn != tokenA || _tokenIn != tokenB) revert InvalidAddress();
+
+        /// @dev Getting the reserves (gas saving)
+        (uint256 reserveA, uint256 reserveB) = getReserves();
+
+        /// @Estimating the tokenB for tokenA
+        if (_tokenIn == tokenA) {
+            /// @dev Calculating the token after.
+            uint256 tokenA_After = reserveA + _amountIn;
+            uint256 tokenB_After = K / tokenA_After;
+            /// @dev Calculating the actual amountOut.
+            _amountOut = reserveB - tokenB_After;
+        }
+        /// @dev Swapping the tokenA for tokenB
+        else {
+            /// @dev Calculating the token after.
+            uint256 tokenB_After = reserveB + _amountIn;
+            uint256 tokenA_After = K / tokenB_After;
+            /// @dev Calculating the actual amountOut.
+            _amountOut = reserveA - tokenA_After;
+        }
     }
 
     /**
@@ -218,7 +270,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
      * @return reserveB The tokenB amount.
      */
     function getReserves()
-        external
+        public
         view
         returns (uint256 reserveA, uint256 reserveB)
     {
