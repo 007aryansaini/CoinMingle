@@ -158,6 +158,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
             amountA,
             amountB
         ) = _addLiquidity(_tokenA, _tokenB, _amountADesired, _amountBDesired);
+
         /// @dev Getting the pair address for tokenA & tokenB.
         address pair = getPair[_tokenA][_tokenB];
         /// @dev Transferring both tokens to pair contract.
@@ -304,7 +305,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
     ) public view returns (uint256 _amountOut) {
         /// @dev validating input fields
         if (_amountIn == 0) revert TokenZeroAmount();
-        if (_path.length >= 2) revert InvalidPath();
+        if (_path.length < 2) revert InvalidPath();
 
         /// @dev Loop though all the paths.
         for (uint256 i; i < (_path.length - 1); i++) {
@@ -537,7 +538,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address _to
     ) private returns (uint256 _amountOut) {
         /// @dev Token validation
-        if (_path.length >= 2) revert InvalidPath();
+        if (_path.length < 2) revert InvalidPath();
         if (_to == address(0)) revert InvalidAddress();
 
         /// @dev Loop through all the paths and swapping in each pair

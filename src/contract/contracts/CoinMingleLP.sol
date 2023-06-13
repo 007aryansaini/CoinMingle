@@ -115,7 +115,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
         /// @dev Calculating the amount of both token added by the user
         uint256 tokenAAmountAdded = _newReserveA - _reserveA;
-        uint256 tokenBAmountAdded = _newReserveA - _reserveB;
+        uint256 tokenBAmountAdded = _newReserveB - _reserveB;
 
         /// @dev getting the total supply of the pair token
         uint256 _totalSupply = totalSupply();
@@ -128,7 +128,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         if (_totalSupply == 0) {
             // then lock liquidity == MINIMUM_LIQUIDITY permanently
             liquidity -= MINIMUM_LIQUIDITY;
-            _mint(address(0), MINIMUM_LIQUIDITY);
+            _mint(address(this), MINIMUM_LIQUIDITY);
         }
 
         /// @dev Checking if the liquidity minted is more than 0
@@ -156,7 +156,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         address _to
     ) external onlyRouter returns (uint256 _amountA, uint256 _amountB) {
         /// @dev getting the amount of liquidity send by the provider to this contract.
-        uint256 liquidity = balanceOf(address(this));
+        uint256 liquidity = balanceOf(address(this)) - MINIMUM_LIQUIDITY;
         /// @dev getting totalSupply ( Save gas )
         uint256 _totalSupply = totalSupply();
 
@@ -241,7 +241,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         uint256 _amountIn
     ) public view returns (uint256 _amountOut) {
         /// @dev Token Address checking.
-        if (_tokenIn != tokenA || _tokenIn != tokenB) revert InvalidAddress();
+        if (_tokenIn != tokenA && _tokenIn != tokenB) revert InvalidAddress();
 
         /// @dev Getting the reserves (gas saving)
         (uint256 reserveA, uint256 reserveB) = getReserves();
