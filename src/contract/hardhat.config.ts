@@ -25,14 +25,14 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      ftmTest: process.env.FTMSCAN_API as string,
-      ftm: process.env.FTMSCAN_API as string,
+      ftmTestnet: process.env.FTMSCAN_API as string,
+      opera: process.env.FTMSCAN_API as string,
     },
   },
   networks: {
     hardhat: {
       forking: {
-        url: "https://rpc.ftm.tools/",
+        url: "https://rpcapi.fantom.network",
       },
     },
 
@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
     },
 
     ftm: {
-      url: "https://rpc.ftm.tools/",
+      url: "https://rpcapi.fantom.network",
       chainId: 250,
       accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
     },

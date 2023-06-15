@@ -1,6 +1,6 @@
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import {
   CoinMingleLP,
   CoinMingleRouter,
@@ -52,7 +52,7 @@ describe("CoinMingle", () => {
     await tokenB.deployed();
   });
 
-  describe("Deployments", () => {
+  describe("___Deployments___", () => {
     describe("___CoinMingleRouter___", () => {
       it("Should return the correct WFTM address", async () => {
         const address = await CoinMingleRouter.WrappedFTM();
@@ -229,6 +229,334 @@ describe("CoinMingle", () => {
         const [, second] = await ethers.getSigners();
         const lpMinted = await Pair.balanceOf(second.address);
         console.log("\t", `LP Minted: ${lpMinted.toString()}`);
+      });
+    });
+
+    describe("Failure", () => {
+      it("Should revert adding liquidity while tokenA & tokenB is 0 address.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1_00_000;
+        await expect(
+          CoinMingleRouter.addLiquidity(
+            zeroAddress,
+            zeroAddress,
+            0,
+            0,
+            deployer.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InvalidAddress");
+        await expect(
+          CoinMingleRouter.addLiquidity(
+            tokenA.address,
+            zeroAddress,
+            0,
+            0,
+            deployer.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InvalidAddress");
+      });
+
+      it("Should revert adding liquidity while deadline passed.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const deadLine = (await time.latest()) - 1_00_000;
+        await expect(
+          CoinMingleRouter.addLiquidity(
+            zeroAddress,
+            zeroAddress,
+            0,
+            0,
+            deployer.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "DeadlinePassed");
+      });
+
+      it("Should revert adding liquidity while tokenA & tokenB amount is 0.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1_00_000;
+        await expect(
+          CoinMingleRouter.addLiquidity(
+            tokenA.address,
+            tokenB.address,
+            0,
+            0,
+            deployer.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InsufficientAmount");
+        await expect(
+          CoinMingleRouter.addLiquidity(
+            tokenA.address,
+            tokenB.address,
+            100,
+            0,
+            deployer.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InsufficientAmount");
+      });
+    });
+  });
+
+  describe("___Swapping___", () => {
+    const swapA_amount = ethers.utils.parseUnits("2", tokenA_decimals);
+    const swapB_amount = ethers.utils.parseUnits("4", tokenB_decimals);
+
+    describe("Success", () => {
+      it("Should return the 55tokenA & 220tokenB balance of pair.", async () => {
+        expect(await tokenA.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("55", tokenA_decimals)
+        );
+        expect(await tokenB.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("220", tokenB_decimals)
+        );
+      });
+
+      it("Should calculate tokenB amountOut with 2tokenA.", async () => {
+        const path = [tokenA.address, tokenB.address];
+        const amount = await CoinMingleRouter.getAmountOut(swapA_amount, path);
+        console.log("\t", `TokenB out: ${amount}`);
+      });
+
+      it("Should swap 2tokenA for tokenB.", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 100;
+        const path = [tokenA.address, tokenB.address];
+
+        const amountMin = await CoinMingleRouter.getAmountOut(
+          swapA_amount,
+          path
+        );
+        const tx = await CoinMingleRouter.swapTokensForTokens(
+          swapA_amount,
+          amountMin,
+          path,
+          thrdAc.address,
+          deadLine
+        );
+        expect(await tx.wait());
+      });
+
+      it("Should return the balanceOf tokenB of thrdAc is 7.7193.", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        expect(await tokenB.balanceOf(thrdAc.address)).to.be.equal(
+          ethers.utils.parseUnits("7.7193", tokenB_decimals)
+        );
+      });
+
+      it("Should return the 57tokenA & 212.2807tokenB balance of pair.", async () => {
+        expect(await tokenA.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("57", tokenA_decimals)
+        );
+        expect(await tokenB.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("212.2807", tokenB_decimals)
+        );
+      });
+
+      it("Should calculate tokenA amountOut with 4tokenB.", async () => {
+        const path = [tokenB.address, tokenA.address];
+        const amount = await CoinMingleRouter.getAmountOut(swapB_amount, path);
+        console.log("\t", `TokenA out: ${amount}`);
+      });
+
+      it("Should swap 4tokenB for tokenA.", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 100;
+        const path = [tokenB.address, tokenA.address];
+
+        const amountMin = await CoinMingleRouter.getAmountOut(
+          swapB_amount,
+          path
+        );
+        const tx = await CoinMingleRouter.swapTokensForTokens(
+          swapB_amount,
+          amountMin,
+          path,
+          thrdAc.address,
+          deadLine
+        );
+        expect(await tx.wait());
+      });
+
+      it("Should return the balanceOf tokenA of thrdAc is 1.0542", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        expect(await tokenA.balanceOf(thrdAc.address)).to.be.equal(
+          ethers.utils.parseUnits("1.0542", tokenB_decimals)
+        );
+      });
+
+      it("Should return the 55.9458tokenA & 216.2807tokenB balance of pair.", async () => {
+        expect(await tokenA.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("55.9458", tokenA_decimals)
+        );
+        expect(await tokenB.balanceOf(Pair.address)).to.be.equal(
+          ethers.utils.parseUnits("216.2807", tokenB_decimals)
+        );
+      });
+    });
+
+    describe("Failure", () => {
+      it("Should revert swapping while path length is <2", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 100;
+        const path = [tokenB.address];
+
+        await expect(
+          CoinMingleRouter.swapTokensForTokens(
+            swapB_amount,
+            0,
+            path,
+            thrdAc.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InvalidPath");
+      });
+
+      it("Should revert swapping while to address is 0 address.", async () => {
+        const deadLine = (await time.latest()) + 100;
+        const path = [tokenB.address, tokenA.address];
+
+        await expect(
+          CoinMingleRouter.swapTokensForTokens(
+            swapB_amount,
+            0,
+            path,
+            zeroAddress,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InvalidAddress");
+      });
+
+      it("Should revert swapping while pair not exists", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 100;
+        const path = [tokenB.address, CoinMingleRouter.address];
+
+        await expect(
+          CoinMingleRouter.swapTokensForTokens(
+            swapB_amount,
+            0,
+            path,
+            thrdAc.address,
+            deadLine
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "PairDoesNotExist");
+      });
+    });
+  });
+
+  describe("___Remove Liquidity___", () => {
+    describe("Success", () => {
+      it("Should get the balanceOf tokenA & tokenB of deployer before.", async () => {
+        const [deployer] = await ethers.getSigners();
+
+        const balanceOfA = await tokenA.balanceOf(deployer.address);
+        const balanceOfB = await tokenB.balanceOf(deployer.address);
+
+        expect(balanceOfA).to.be.equal(
+          ethers.utils.parseUnits("99943", tokenA_decimals)
+        );
+        expect(balanceOfB).to.be.equal(
+          ethers.utils.parseUnits("99776", tokenB_decimals)
+        );
+      });
+
+      it("Should approve lp amount from pair.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const tx = await Pair.approve(
+          CoinMingleRouter.address,
+          await Pair.balanceOf(deployer.address)
+        );
+        expect(await tx.wait());
+      });
+
+      it("Should remove liquidity of deployer of 9.9LP", async () => {
+        const [deployer] = await ethers.getSigners();
+        const lp = await Pair.balanceOf(deployer.address);
+        const deadline = (await time.latest()) + 100;
+
+        const tx = await CoinMingleRouter.removeLiquidity(
+          tokenA.address,
+          tokenB.address,
+          lp,
+          deployer.address,
+          deadline
+        );
+        expect(await tx.wait());
+      });
+
+      it("Should get the balanceOf tokenA & tokenB of deployer after.", async () => {
+        const [deployer] = await ethers.getSigners();
+
+        const balanceOfA = await tokenA.balanceOf(deployer.address);
+        const balanceOfB = await tokenB.balanceOf(deployer.address);
+
+        expect(balanceOfA).to.be.equal(
+          ethers.utils.parseUnits("99948.0351", tokenA_decimals)
+        );
+        expect(balanceOfB).to.be.equal(
+          ethers.utils.parseUnits("99795.4652", tokenB_decimals)
+        );
+      });
+
+      it("Should return the reserves 50.9107tokenA & 196.8155tokenB.", async () => {
+        const reserveA_amount = ethers.utils.parseUnits(
+          "50.9107",
+          tokenA_decimals
+        );
+        const reserveB_amount = ethers.utils.parseUnits(
+          "196.8155",
+          tokenB_decimals
+        );
+
+        const { reserveA, reserveB } = await Pair.getReserves();
+
+        expect(reserveA).to.be.equal(reserveA_amount);
+        expect(reserveB).to.be.equal(reserveB_amount);
+        expect(await tokenA.balanceOf(Pair.address)).to.be.equal(
+          reserveA_amount
+        );
+        expect(await tokenB.balanceOf(Pair.address)).to.be.equal(
+          reserveB_amount
+        );
+      });
+    });
+
+    describe("failure", () => {
+      it("Should revert remove liquidity of deployer.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const lp = await Pair.balanceOf(deployer.address);
+        const deadline = (await time.latest()) + 100;
+
+        await expect(
+          CoinMingleRouter.removeLiquidity(
+            tokenA.address,
+            tokenB.address,
+            lp,
+            deployer.address,
+            deadline
+          )
+        ).to.be.revertedWithCustomError(
+          CoinMingleRouter,
+          "InsufficientLiquidity"
+        );
+      });
+
+      it("Should revert remove liquidity while pair not exists.", async () => {
+        const [deployer] = await ethers.getSigners();
+        const deadline = (await time.latest()) + 100;
+
+        await expect(
+          CoinMingleRouter.removeLiquidity(
+            tokenA.address,
+            CoinMingleRouter.address,
+            1,
+            deployer.address,
+            deadline
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "PairDoesNotExist");
       });
     });
   });

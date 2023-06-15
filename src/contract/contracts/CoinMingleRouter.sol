@@ -515,6 +515,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
 
         /// @dev Getting the pair address for tokenA & tokenB.
         address pair = getPair[_tokenA][_tokenB];
+        if (pair == address(0)) revert PairDoesNotExist();
         /// @dev Sending CoinMingleLP tokens to CoinMingleLP contract.
         ICoinMingle(pair).transferFrom(msg.sender, pair, _liquidity);
         /// @dev Burning tokens and remove liquidity.

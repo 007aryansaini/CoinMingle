@@ -2,9 +2,9 @@
 pragma solidity 0.8.10;
 
 /// @dev Importing openzeppelin stuffs.
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Custom errors.
 error InvalidAddress();
@@ -200,7 +200,18 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         (uint256 reserveA, uint256 reserveB) = getReserves();
 
         /// @dev Getting the token which user wants to swap.
-        address _tokenSwapping = _balanceOfTokenA > reserveA ? tokenA : tokenB;
+        address _tokenSwapping;
+        address _tokenToSent;
+        /// @dev If router transferred tokenA
+        if (_balanceOfTokenA > reserveA) {
+            /// @dev then swapping tokenB for tokenA
+            _tokenSwapping = tokenA;
+            _tokenToSent = tokenB;
+        } else {
+            /// @dev else swapping tokenA for tokenB
+            _tokenSwapping = tokenB;
+            _tokenToSent = tokenA;
+        }
 
         //// @dev Getting the actual amount of token user wants to swap.
         uint256 _amountIn;
@@ -226,7 +237,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         }
 
         /// @dev transferring the tokens to the address.
-        IERC20(_tokenSwapping).transfer(_to, _amountOut);
+        IERC20(_tokenToSent).transfer(_to, _amountOut);
         /// @dev Emitting the event
         emit TokensSwapped(_to, _amountIn, _amountOut);
     }
@@ -280,6 +291,8 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
     /**
      * @dev Helper function to calculate square root of a number
+     * @param y: The number which you want to get.
+     * @return z The square root of the number
      */
     function sqrt(uint256 y) private pure returns (uint256 z) {
         if (y > 3) {
