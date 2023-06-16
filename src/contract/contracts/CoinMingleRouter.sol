@@ -26,6 +26,8 @@ error InsufficientAmount();
 error ExcessiveLiquidity();
 error InsufficientLiquidity();
 error InsufficientPoolAmount();
+error InvalidLiquidity();
+error InvalidAmount();
 
 contract CoinMingleRouter is Ownable, ReentrancyGuard {
     /// @dev Tracking the Wrapped FTM contract address.
@@ -414,6 +416,83 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         /// @dev Converting WrappedFTM to FTM.
         WrappedFTM.withdraw(_amountOut);
         WrappedFTM.transfer(_to, _amountOut);
+    }
+
+    /**
+     * @dev To get an estimate how many tokenA and TokenB will be received when particular amount of liquidity is removed.
+     * @param _liquidity: The amount of liquidity being removed.
+     * @param _tokenA: The Address of tokenA.
+     * @param _tokenB: The Address of tokenB.
+     * @return _amountA : The amount of tokenA received after removing _liquidity amount of liquidity
+     * @return _amountB : The amount of tokenB received after removing _liquidity amount of liquidity
+     */
+
+    function getAmountsOutForLiquidity(
+        uint256 _liquidity,
+        address _tokenA,
+        address _tokenB
+    ) external view returns (uint256 _amountA, uint256 _amountB) {
+        /// @dev returning if 0 liquidity is passed as input parameter
+        if (_liquidity == 0) return (_amountA, _amountB);
+
+        /// @dev getting the pair based on addresses of two tokens
+        address pair = getPair[_tokenA][_tokenB];
+
+        /// @dev validating if pair address exist
+        if (pair == address(0)) revert PairDoesNotExist();
+
+        /// @dev getting totalSupply ( Save gas)
+        uint256 _totalSupply = ICoinMingle(pair).totalSupply();
+
+        /// @dev validation liquidity entered should be less than equal to total Supply
+        if (_liquidity > _totalSupply) revert InvalidLiquidity();
+
+        /// @dev getting both tokens reserves
+        uint256 _reserveA;
+        uint256 _reserveB;
+
+        (_reserveA, _reserveB) = ICoinMingle(pair).getReserves();
+
+        /// @dev Calculating both tokens amounts
+        _amountA = (_liquidity * _reserveA) / _totalSupply;
+        _amountB = (_liquidity * _reserveB) / _totalSupply;
+    }
+
+    /**
+     * @dev To get an estimate how many tokenOut required to add liquidity when certain amount of tokenIn added.
+     * @param _tokenInAddress: The address of tokenIn ( the token whose amount is entered)
+     * @param _tokenOutAddress: The Address of tokenOut (the token whose amount is to obtain)
+     * @param _tokenInAmount: The amount of tokenIn
+     * @return _tokenOutAmount : The amount of tokenOut required based on amount of tokenIn.
+     */
+
+    function getTokenInFor(
+        address _tokenInAddress,
+        address _tokenOutAddress,
+        uint256 _tokenInAmount
+    ) external view returns (uint256 _tokenOutAmount) {
+        /// @dev Validating 0 amount
+        if (_tokenInAmount == 0) revert InvalidAmount();
+
+        /// @dev getting and validating pair
+        address pair = getPair[_tokenInAddress][_tokenOutAddress];
+        if (pair == address(0)) revert PairDoesNotExist();
+
+        /// @dev initializing LP instance
+        ICoinMingle _coinMingle = ICoinMingle(pair);
+
+        /// @dev getting reserves
+        uint256 _reserveA;
+        uint256 _reserveB;
+        (_reserveA, _reserveB) = _coinMingle.getReserves();
+
+        /// @dev Calulating tokenOut amount
+
+        if (_coinMingle.tokenA() == _tokenInAddress) {
+            _tokenOutAmount = (_tokenInAmount * _reserveB) / _reserveA;
+        } else {
+            _tokenOutAmount = (_tokenInAmount * _reserveA) / _reserveB;
+        }
     }
 
     /**

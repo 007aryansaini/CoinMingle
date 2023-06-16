@@ -55,4 +55,10 @@ interface ICoinMingle is IERC20 {
         external
         view
         returns (uint256 reserveA, uint256 reserveB);
+
+    /**
+     * @dev returns the address of tokenA
+     */
+
+    function tokenA() external view returns (address _tokenA);
 }
