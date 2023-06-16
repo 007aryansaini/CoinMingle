@@ -448,10 +448,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         if (_liquidity > _totalSupply) revert InvalidLiquidity();
 
         /// @dev getting both tokens reserves
-        uint256 _reserveA;
-        uint256 _reserveB;
-
-        (_reserveA, _reserveB) = ICoinMingle(pair).getReserves();
+        (uint256 _reserveA, uint256 _reserveB) = ICoinMingle(pair).getReserves();
 
         /// @dev Calculating both tokens amounts
         _amountA = (_liquidity * _reserveA) / _totalSupply;
@@ -482,12 +479,9 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         ICoinMingle _coinMingle = ICoinMingle(pair);
 
         /// @dev getting reserves
-        uint256 _reserveA;
-        uint256 _reserveB;
-        (_reserveA, _reserveB) = _coinMingle.getReserves();
+        (uint256 _reserveA, uint256 _reserveB) = _coinMingle.getReserves();
 
-        /// @dev Calulating tokenOut amount
-
+        /// @dev Calculating tokenOut amount
         if (_coinMingle.tokenA() == _tokenInAddress) {
             _tokenOutAmount = (_tokenInAmount * _reserveB) / _reserveA;
         } else {
