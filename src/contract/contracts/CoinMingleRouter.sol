@@ -448,7 +448,8 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         if (_liquidity > _totalSupply) revert InvalidLiquidity();
 
         /// @dev getting both tokens reserves
-        (uint256 _reserveA, uint256 _reserveB) = ICoinMingle(pair).getReserves();
+        (uint256 _reserveA, uint256 _reserveB) = ICoinMingle(pair)
+            .getReserves();
 
         /// @dev Calculating both tokens amounts
         _amountA = (_liquidity * _reserveA) / _totalSupply;
@@ -467,7 +468,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address _tokenInAddress,
         address _tokenOutAddress,
         uint256 _tokenInAmount
-    ) external view returns (uint256 _tokenOutAmount) {
+    ) public view returns (uint256 _tokenOutAmount) {
         /// @dev Validating 0 amount
         if (_tokenInAmount == 0) revert InvalidAmount();
 
@@ -551,15 +552,22 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         }
         /// @dev Else checking the correct amount given.
         else {
-            uint256 amountBOptimal = (_amountADesired * reserveB) / reserveA;
+            uint256 amountBOptimal = getTokenInFor(
+                _tokenA,
+                _tokenB,
+                _amountADesired
+            );
             // Checking if the desired amount of token B is less than or equal to the optimal amount
             if (amountBOptimal <= _amountBDesired) {
                 if (amountBOptimal == 0) revert InsufficientLiquidity();
                 /// @dev Returns the actual amount will be added into liquidity.
                 (amountA, amountB) = (_amountADesired, amountBOptimal);
             } else {
-                uint256 amountAOptimal = (_amountBDesired * reserveA) /
-                    reserveB;
+                uint256 amountAOptimal = getTokenInFor(
+                    _tokenB,
+                    _tokenA,
+                    _amountBDesired
+                );
 
                 if (amountAOptimal == 0) revert InsufficientLiquidity();
                 if (amountAOptimal > _amountADesired)
