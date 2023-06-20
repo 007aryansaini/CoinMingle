@@ -36,47 +36,10 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         _;
     }
 
-    /// @dev Events
-    /**
-     * @dev event LiquidityMinted: will be emitted when the liquidity is minted to liquidity provider
-     * @param liquidityProvider: The person who is adding liquidity to the pool
-     * @param tokenAAmount : The amount of token A added by liquidity provider in the pool
-     * @param tokenBAmount : The amount of token B added by liquidity provider in the pool
-     */
 
-    event LiquidityMinted(
-        address indexed liquidityProvider,
-        uint256 indexed tokenAAmount,
-        uint256 indexed tokenBAmount
-    );
 
-    /// @dev Events
-    /**
-     * @dev event LiquidityBurned: will be emitted when the liquidity is burned
-     * @param liquidityProvider: The person who is adding liquidity to the pool
-     * @param tokenAAmount : The amount of token A added taken back by liquidity provider
-     * @param tokenBAmount : The amount of token B added taken back by liquidity provider
-     */
 
-    event LiquidityBurned(
-        address indexed liquidityProvider,
-        uint256 indexed tokenAAmount,
-        uint256 indexed tokenBAmount
-    );
 
-    /// @dev Events
-    /**
-     * @dev event LiquidityBurned: will be emitted when the liquidity is burned
-     * @param _to: The person to whom swapped tokens are minted
-     * @param tokenAAmount : The amount of token A given
-     * @param tokenBAmount : The amount of token B received
-     */
-
-    event TokensSwapped(
-        address indexed _to,
-        uint256 indexed tokenAAmount,
-        uint256 indexed tokenBAmount
-    );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -142,8 +105,6 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         _reserveB = _newReserveB;
         K = _newReserveA * _newReserveB;
 
-        /// @dev emitting the event
-        emit LiquidityMinted(_to, tokenAAmountAdded, tokenBAmountAdded);
     }
 
     /**
@@ -180,8 +141,6 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         IERC20(tokenA).transfer(_to, _amountA);
         IERC20(tokenB).transfer(_to, _amountB);
 
-        /// @dev Emitting the event
-        emit LiquidityBurned(_to, _amountA, _amountB);
     }
 
     /**
@@ -238,8 +197,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
 
         /// @dev transferring the tokens to the address.
         IERC20(_tokenToSent).transfer(_to, _amountOut);
-        /// @dev Emitting the event
-        emit TokensSwapped(_to, _amountIn, _amountOut);
+      
     }
 
     /**

@@ -82,6 +82,24 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address indexed pair
     );
 
+        /// @dev Events
+    /**
+     * @dev event TokensSwapped: will be emitted when tokens swapped
+     * @param _to: The person to whom swapped tokens are minted
+     * @param tokenIN : Address of the token being swapped
+     * @param tokenInAmount : The amount of input token given
+     * @param tokenOut : Address of the token user will get after swapped
+     * @param tokenOutAmount : The amount of output token received
+     */
+
+    event TokensSwapped(
+        address indexed _to,
+        address tokenIN,
+        uint256 indexed tokenInAmount,
+        address tokenOut,
+        uint256 indexed tokenOutAmount
+    );
+
     /**
      * @dev Fallback function to receive FTM from WrappedFTM contract.
      * Only Receive FTM from Wrapped FTM contract.
@@ -198,14 +216,15 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
     {
         /// @dev Validations.
         if (_token == address(0)) revert InvalidAddress();
-        if (_amountDesired == 0 || msg.value == 0) revert InsufficientAmount();
+        uint256 _ftmAmountSentByUser = msg.value;
+        if (_amountDesired == 0 || _ftmAmountSentByUser == 0) revert InsufficientAmount();
 
         /// @dev Adding liquidity.
         (amountToken, amountFTM) = _addLiquidity(
             _token,
             address(WrappedFTM),
             _amountDesired,
-            msg.value
+            _ftmAmountSentByUser
         );
         /// @dev Getting the pair address for tokenA & tokenB.
         address pair = getPair[_token][address(WrappedFTM)];
@@ -219,8 +238,8 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         liquidity = ICoinMingle(pair).mint(_to);
 
         /// @dev Refund dust ftm, if any
-        if (msg.value > amountFTM) {
-            (bool success, ) = msg.sender.call{value: msg.value - amountFTM}(
+        if (_ftmAmountSentByUser > amountFTM) {
+            (bool success, ) = msg.sender.call{value: _ftmAmountSentByUser - amountFTM}(
                 ""
             );
             require(success);
@@ -256,6 +275,8 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
             _liquidity,
             _to
         );
+
+
     }
 
     /**
@@ -630,7 +651,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
             if (pair == address(0)) revert PairDoesNotExist();
 
             /// @dev If iterator on first index
-            if (i == 0) {
+            if (i == 0 && _path[i] != address(WrappedFTM)) {
                 /// @dev Then transfer from trader to first pair.
                 IERC20(_path[i]).transferFrom(msg.sender, pair, _amountIn);
                 _amountOut = ICoinMingle(pair).swap(address(this));
@@ -645,5 +666,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         if (_amountOut < _amountOutMin) revert HighSlippage();
         /// @dev Transferring the amountOut of path[_path.length-1] token.
         IERC20(_path[_path.length - 1]).transfer(_to, _amountOut);
+
+        emit TokensSwapped(_to , _path[0] , _amountIn , _path[_path.length -1] , _amountOut);
     }
 }

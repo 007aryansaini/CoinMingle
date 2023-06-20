@@ -7,10 +7,11 @@ import {
   ERC20,
   Token,
 } from "../typechain-types";
+import { describe } from "node:test";
 console.clear();
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
-const WFTM_address = "0xf1277d1Ed8AD466beddF92ef448A132661956621";
+const WFTM_address = "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83";
 
 describe("CoinMingle", () => {
   let CoinMingleRouter: CoinMingleRouter;
@@ -558,6 +559,147 @@ describe("CoinMingle", () => {
           )
         ).to.be.revertedWithCustomError(CoinMingleRouter, "PairDoesNotExist");
       });
+    });
+  });
+
+  describe("__AddLiquidityFTM__", () => {
+    describe("Success", () => {
+      it("Should create a pair of tokenA and WFTM providing FTM", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1000;
+        const tokenALiquidityAmount = ethers.utils.parseUnits(
+          "4500",
+          tokenA_decimals
+        );
+
+        const tx = await CoinMingleRouter.addLiquidityFTM(
+          tokenA.address,
+          tokenALiquidityAmount,
+          thrdAc.address,
+          deadLine,
+          { value: ethers.utils.parseUnits("1000000", "wei") }
+        );
+
+        const receipt = await tx.wait();
+      });
+
+      it("Should display the correct reserves of WFTM and TokenA .. and Allocate liquidity correctly", async () => {
+        const pair = await CoinMingleRouter.allPairs(1);
+
+        expect(await tokenA.balanceOf(pair)).to.be.equal("45000000");
+        expect(await WFTM.balanceOf(pair)).to.be.equal("1000000");
+        const LP_pair = await ethers.getContractAt("CoinMingleLP", pair);
+
+        const [, , thrdAc] = await ethers.getSigners();
+        const resulted_lp = Math.sqrt(45000000 * 1000000);
+        expect(await LP_pair.balanceOf(thrdAc.address)).to.be.equal(
+          Math.floor(resulted_lp) - 1000
+        );
+        expect(await LP_pair.balanceOf(LP_pair.address)).to.be.equal(1000);
+        expect(await LP_pair.K()).to.equal(45000000 * 1000000);
+      });
+
+      it("Should return the extra amount of FTM if not provided in correct ratio", async () => {
+        const [, , , frthAccount] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1000;
+        const tokenALiquidityAmount = ethers.utils.parseUnits(
+          "4500",
+          tokenA_decimals
+        );
+
+        const pair = await CoinMingleRouter.allPairs(1);
+        const LP_pair = await ethers.getContractAt("CoinMingleLP", pair);
+        const FTM_Amount = ethers.utils.parseUnits("10000000", "wei");
+
+        const tx = await CoinMingleRouter.addLiquidityFTM(
+          tokenA.address,
+          tokenALiquidityAmount,
+          frthAccount.address,
+          deadLine,
+          { value: FTM_Amount }
+        );
+        const reserves = await LP_pair.getReserves();
+        expect(reserves[0]).to.be.equal("90000000");
+        expect(reserves[1]).to.be.equal("2000000");
+      });
+    });
+
+    describe("Failure", () => {
+      it("Should revert if pairing token is Zero address", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1000;
+        const tokenALiquidityAmount = ethers.utils.parseUnits(
+          "4500",
+          tokenA_decimals
+        );
+
+        const FTM_Amount = ethers.utils.parseUnits("1000000", "wei");
+
+        await expect(
+          CoinMingleRouter.addLiquidityFTM(
+            zeroAddress,
+            tokenALiquidityAmount,
+            thrdAc.address,
+            deadLine,
+            { value: FTM_Amount }
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InvalidAddress");
+      });
+
+      it("Should revert if token Amount is sent as 0", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1000;
+
+        const FTM_Amount = ethers.utils.parseUnits("1000000", "wei");
+
+        await expect(
+          CoinMingleRouter.addLiquidityFTM(
+            tokenA.address,
+            0,
+            thrdAc.address,
+            deadLine,
+            { value: FTM_Amount }
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InsufficientAmount");
+      });
+
+      it("Should revert if 0 FTM is sent", async () => {
+        const [, , thrdAc] = await ethers.getSigners();
+        const deadLine = (await time.latest()) + 1000;
+
+        const tokenALiquidityAmount = ethers.utils.parseUnits(
+          "4500",
+          tokenA_decimals
+        );
+
+        await expect(
+          CoinMingleRouter.addLiquidityFTM(
+            tokenA.address,
+            tokenALiquidityAmount,
+            thrdAc.address,
+            deadLine,
+            { value: 0 }
+          )
+        ).to.be.revertedWithCustomError(CoinMingleRouter, "InsufficientAmount");
+      });
+    });
+
+    it("Should revert if liquidity after MINIMUM liquidity is 0 ", async () => {
+      const [, , thrdAc] = await ethers.getSigners();
+      const deadLine = (await time.latest()) + 1000;
+
+      await expect(
+        CoinMingleRouter.addLiquidityFTM(
+          tokenA.address,
+          10,
+          thrdAc.address,
+          deadLine,
+          { value: 10 }
+        )
+      ).to.be.revertedWithCustomError(
+        CoinMingleRouter,
+        "InsufficientLiquidity"
+      );
     });
   });
 });
