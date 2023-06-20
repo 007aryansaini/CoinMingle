@@ -181,7 +181,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
             /// @dev Calculating the actual amount out as per tokenA
             _amountOut = getAmountOut(tokenA, _amountIn);
             /// @dev Updating the both reserve.
-            if(_amountOut == _reserveB) revert InsufficientLiquidity();
+            if(  _amountOut == 0 || _amountOut == _reserveB) revert InsufficientLiquidity();
             _reserveB -= _amountOut;
             _reserveA += _amountIn;
             
@@ -193,7 +193,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
             /// @dev Calculating the actual amount out as per tokenB
             _amountOut = getAmountOut(tokenB, _amountIn);
             /// @dev Updating the both reserve.
-            if(_amountOut == _reserveA) revert InsufficientLiquidity();
+            if(   _amountOut == 0 || _amountOut == _reserveA ) revert InsufficientLiquidity();
             _reserveA -= _amountOut;
             _reserveB += _amountIn;
             
