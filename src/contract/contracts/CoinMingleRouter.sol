@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 /// @dev Importing the custom stuffs.
 import "./interfaces/IWFTM.sol";
 import "./interfaces/ICoinMingleLP.sol";
+import "hardhat/console.sol";
 
 /// @dev Custom errors.
 error PairExists();
@@ -82,7 +83,7 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address indexed pair
     );
 
-        /// @dev Events
+    /// @dev Events
     /**
      * @dev event TokensSwapped: will be emitted when tokens swapped
      * @param _to: The person to whom swapped tokens are minted
@@ -217,7 +218,8 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         /// @dev Validations.
         if (_token == address(0)) revert InvalidAddress();
         uint256 _ftmAmountSentByUser = msg.value;
-        if (_amountDesired == 0 || _ftmAmountSentByUser == 0) revert InsufficientAmount();
+        if (_amountDesired == 0 || _ftmAmountSentByUser == 0)
+            revert InsufficientAmount();
 
         /// @dev Adding liquidity.
         (amountToken, amountFTM) = _addLiquidity(
@@ -239,9 +241,9 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
 
         /// @dev Refund dust ftm, if any
         if (_ftmAmountSentByUser > amountFTM) {
-            (bool success, ) = msg.sender.call{value: _ftmAmountSentByUser - amountFTM}(
-                ""
-            );
+            (bool success, ) = msg.sender.call{
+                value: _ftmAmountSentByUser - amountFTM
+            }("");
             require(success);
         }
 
@@ -275,8 +277,6 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
             _liquidity,
             _to
         );
-
-
     }
 
     /**
@@ -415,14 +415,8 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
         address[] calldata _path,
         address _to,
         uint256 _deadline
-    )
-        external
-        payable
-        nonReentrant
-        ensure(_deadline)
-        returns (uint256 _amountOut)
-    {
-        /// @dev Checking if the first address is WFTM.
+    ) external nonReentrant ensure(_deadline) returns (uint256 _amountOut) {
+        /// @dev Checking if the last address is WFTM.
         if (_path[_path.length - 1] != address(WrappedFTM))
             revert InvalidWFTMPath();
 
@@ -436,7 +430,9 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
 
         /// @dev Converting WrappedFTM to FTM.
         WrappedFTM.withdraw(_amountOut);
-        WrappedFTM.transfer(_to, _amountOut);
+
+        (bool success, ) = _to.call{value: _amountOut}("");
+        require(success);
     }
 
     /**
@@ -651,22 +647,35 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
             if (pair == address(0)) revert PairDoesNotExist();
 
             /// @dev If iterator on first index
-            if (i == 0 && _path[i] != address(WrappedFTM)) {
-                /// @dev Then transfer from trader to first pair.
-                IERC20(_path[i]).transferFrom(msg.sender, pair, _amountIn);
-                _amountOut = ICoinMingle(pair).swap(address(this));
+            if (i == 0) {
+                if (_path[i] == address(WrappedFTM)) {
+                    IERC20(_path[i]).transfer(pair, _amountIn);
+                    _amountOut = ICoinMingle(pair).swap(address(this));
+                } else {
+                    /// @dev Then transfer from trader to first pair.
+                    IERC20(_path[i]).transferFrom(msg.sender, pair, _amountIn);
+                    _amountOut = ICoinMingle(pair).swap(address(this));
+                }
             } else {
                 /// @dev Then transfer from CoinMingleRouter to next pair.
                 IERC20(_path[i]).transfer(pair, _amountOut);
                 _amountOut = ICoinMingle(pair).swap(address(this));
             }
         }
-
         /// @dev Minimum tokenOut validation.
         if (_amountOut < _amountOutMin) revert HighSlippage();
-        /// @dev Transferring the amountOut of path[_path.length-1] token.
-        IERC20(_path[_path.length - 1]).transfer(_to, _amountOut);
 
-        emit TokensSwapped(_to , _path[0] , _amountIn , _path[_path.length -1] , _amountOut);
+        /// @dev Transferring the amountOut of path[_path.length-1] token.
+        if (_to != address(this)) {
+            IERC20(_path[_path.length - 1]).transfer(_to, _amountOut);
+        }
+
+        emit TokensSwapped(
+            _to,
+            _path[0],
+            _amountIn,
+            _path[_path.length - 1],
+            _amountOut
+        );
     }
 }
