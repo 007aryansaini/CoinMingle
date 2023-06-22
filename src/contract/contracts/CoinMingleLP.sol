@@ -36,11 +36,6 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         _;
     }
 
-
-
-
-
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -104,7 +99,6 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         _reserveA = _newReserveA;
         _reserveB = _newReserveB;
         K = _newReserveA * _newReserveB;
-
     }
 
     /**
@@ -140,7 +134,6 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         /// @dev transferring both the tokens to the provider
         IERC20(tokenA).transfer(_to, _amountA);
         IERC20(tokenB).transfer(_to, _amountB);
-
     }
 
     /**
@@ -181,10 +174,10 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
             /// @dev Calculating the actual amount out as per tokenA
             _amountOut = getAmountOut(tokenA, _amountIn);
             /// @dev Updating the both reserve.
-            if(  _amountOut == 0 || _amountOut == _reserveB) revert InsufficientLiquidity();
+            if (_amountOut == 0 || _amountOut == _reserveB)
+                revert InsufficientLiquidity();
             _reserveB -= _amountOut;
             _reserveA += _amountIn;
-            
         }
         /// @dev Swapping the tokenB for tokenA
         else {
@@ -193,15 +186,14 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
             /// @dev Calculating the actual amount out as per tokenB
             _amountOut = getAmountOut(tokenB, _amountIn);
             /// @dev Updating the both reserve.
-            if(   _amountOut == 0 || _amountOut == _reserveA ) revert InsufficientLiquidity();
+            if (_amountOut == 0 || _amountOut == _reserveA)
+                revert InsufficientLiquidity();
             _reserveA -= _amountOut;
             _reserveB += _amountIn;
-            
         }
 
         /// @dev transferring the tokens to the address.
         IERC20(_tokenToSent).transfer(_to, _amountOut);
-      
     }
 
     /**
@@ -219,10 +211,14 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         /// @dev Getting the reserves (gas saving)
         (uint256 reserveA, uint256 reserveB) = getReserves();
 
+        /// @dev Subtracting the trading fees from input tokens
+        uint256 _tradingFees = (_amountIn * 3) / 1000;
+        uint256 _amountAfterTradingFees = _amountIn - _tradingFees;
+
         /// @Estimating the tokenB for tokenA
         if (_tokenIn == tokenA) {
             /// @dev Calculating the token after.
-            uint256 tokenA_After = reserveA + _amountIn;
+            uint256 tokenA_After = reserveA + _amountAfterTradingFees;
             uint256 tokenB_After = K / tokenA_After;
             /// @dev Calculating the actual amountOut.
             _amountOut = reserveB - tokenB_After;
@@ -230,7 +226,7 @@ contract CoinMingleLP is Initializable, ERC20Upgradeable {
         /// @dev Swapping the tokenA for tokenB
         else {
             /// @dev Calculating the token after.
-            uint256 tokenB_After = reserveB + _amountIn;
+            uint256 tokenB_After = reserveB + _amountAfterTradingFees;
             uint256 tokenA_After = K / tokenB_After;
             /// @dev Calculating the actual amountOut.
             _amountOut = reserveA - tokenA_After;
