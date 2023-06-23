@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 /// @dev Importing the custom stuffs.
 import "./interfaces/IWFTM.sol";
 import "./interfaces/ICoinMingleLP.sol";
-import "hardhat/console.sol";
 
 /// @dev Custom errors.
 error PairExists();
