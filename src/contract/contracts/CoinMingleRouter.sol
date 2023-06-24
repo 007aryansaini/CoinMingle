@@ -15,7 +15,6 @@ import "./interfaces/ICoinMingleLP.sol";
 error PairExists();
 error InvalidPath();
 error HighSlippage();
-error InvalidRatio();
 error InvalidWFTMPath();
 error DeadlinePassed();
 error InvalidAddress();
@@ -25,7 +24,6 @@ error IdenticalAddress();
 error InsufficientAmount();
 error ExcessiveLiquidity();
 error InsufficientLiquidity();
-error InsufficientPoolAmount();
 error InvalidLiquidity();
 error InvalidAmount();
 
