@@ -92,10 +92,10 @@ contract CoinMingleRouter is Ownable, ReentrancyGuard {
 
     event TokensSwapped(
         address indexed _to,
-        address tokenIN,
-        uint256 indexed tokenInAmount,
-        address tokenOut,
-        uint256 indexed tokenOutAmount
+        address indexed tokenIN,
+        uint256 tokenInAmount,
+        address indexed tokenOut,
+        uint256 tokenOutAmount
     );
 
     /**
