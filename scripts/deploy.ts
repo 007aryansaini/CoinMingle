@@ -2,7 +2,10 @@ import { ethers, network, run } from "hardhat";
 
 const deploy = async () => {
   /// @dev Getting the contract factories.
-  const WFTM = "0x812666209b90344Ec8e528375298ab9045c2Bd08";
+  const WFTM =
+    network.name == "ftm_test"
+      ? "0x812666209b90344ec8e528375298ab9045c2bd08"
+      : "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83";
   const CoinMingleLPFactory = await ethers.getContractFactory("CoinMingleLP");
   const CoinMingleRouterFactory = await ethers.getContractFactory(
     "CoinMingleRouter"
