@@ -243,3 +243,7 @@ This function allows you to get the estimated `tokenA` and `tokenB` needed to ad
 #### Returns
 
 - `_tokenOutAmount` : The amount of tokenOut required based on amount of `tokenIn`.
+
+## **🔖 License**
+
+This project is licensed under the [**UNLICENSED**](/LICENSE) license.
