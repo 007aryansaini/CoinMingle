@@ -19,15 +19,21 @@ To use the CoinMingleRouter, follow the steps below:
 
 3. Once deployed, you can interact with the contract by calling its functions with the required parameters.
 
+</br>
+
 ## Functions
 
 ### `WrappedFTM`
 
 This function allows you to get the Wrapped FTM contract address.
 
+</br>
+
 ### `CoinMingleImplementation`
 
 This function allows you to get the actual cloneable pair contract address.
+
+</br>
 
 ### `getPair`
 
@@ -41,6 +47,8 @@ This function allows you to get the pair address as per `tokenA` and `tokenB` ad
 #### Returns
 
 - `address`: The pair address based on first and second pair token.
+
+</br>
 
 ### `allPairs`
 
@@ -58,6 +66,8 @@ This function allows you to get the pair address as per index.
 
 This function allows you to get the no of pairs available in the router.
 
+</br>
+
 ### `createPair`
 
 This function allows you to create a pair between two ERC20 tokens.
@@ -70,6 +80,8 @@ This function allows you to create a pair between two ERC20 tokens.
 #### Returns
 
 - `address`: The newly created pair address as per `tokenA` and `tokenB`.
+
+</br>
 
 ### `addLiquidity`
 
@@ -90,6 +102,8 @@ This function allows you to provide liquidity for a **ERC20/ERC20** token pair. 
 - `amountB`: The amount of tokenB added to liquidity.
 - `liquidity`: The amount of CoinMingleLP tokens minted.
 
+</br>
+
 ### `addLiquidityFTM`
 
 This function allows you to provide liquidity for a **FTM/ERC20** token pair. If no pair available for these two token, then it will create pair first between WFTM/ERC20.
@@ -106,6 +120,8 @@ This function allows you to provide liquidity for a **FTM/ERC20** token pair. If
 - `amountToken`: The amount of token added to liquidity.
 - `amountFTM`: The amount of FTM added to liquidity.
 - `liquidity`: The amount of CoinMingleLP tokens minted.
+
+</br>
 
 ### `removeLiquidity`
 
@@ -124,6 +140,8 @@ This function allows you to remove liquidity for a **ERC20/ERC20** token pair.
 - `amountA`: The amount of **tokenA** received.
 - `amountB`: The amount of **tokenB** received.
 
+</br>
+
 ### `removeLiquidityFTM`
 
 This function allows you to remove liquidity for a **FTM/ERC20** token pair and vice-versa.
@@ -139,6 +157,8 @@ This function allows you to remove liquidity for a **FTM/ERC20** token pair and 
 
 - `amountToken`: The amount of token received.
 - `amountFTM`: The amount of FTM received.
+
+</br>
 
 ### `swapTokensForTokens`
 
@@ -156,6 +176,8 @@ This function allows you to swap tokens for an amount of input tokens.
 
 - `_amountOut`: The amount of token received on the behalf of `_amountIn`.
 
+</br>
+
 ### `swapFTMForTokens`
 
 This function allows you to swap ERC20 for an amount of input FTM.
@@ -170,6 +192,8 @@ This function allows you to swap ERC20 for an amount of input FTM.
 #### Returns
 
 - `_amountOut`: The amount of token received on the behalf of `msg.value`.
+
+</br>
 
 ### `swapTokensForFTM`
 
@@ -187,6 +211,8 @@ This function allows you to swap FTM for an amount of input ERC20 token.
 
 - `_amountOut`: The amount of token received on the behalf of `_amountIn`.
 
+</br>
+
 ### `getAmountsOutForLiquidity`
 
 This function allows you to get the estimated `tokenA` and `tokenB` output as per liquidity amount.
@@ -201,6 +227,8 @@ This function allows you to get the estimated `tokenA` and `tokenB` output as pe
 
 - `_amountA` : The amount of tokenA received after removing `_liquidity` amount of liquidity.
 - `_amountB` : The amount of tokenB received after removing `_liquidity` amount of liquidity.
+
+</br>
 
 ### `getTokenInFor`
 
