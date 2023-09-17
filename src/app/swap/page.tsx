@@ -497,7 +497,7 @@ const Swap = () => {
               <Image src="/ftm-logo.svg" alt="" width={20} height={20} />
               <div className="flex items-center justify-between gap-2">
                 <p className="font-semibold text-sm">
-                  {activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol}
+                  {activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol}
                 </p>
                 <BiDownArrow />
               </div>
@@ -554,7 +554,7 @@ const Swap = () => {
               <Image src="/ftm-logo.svg" alt="" width={20} height={20} />
               <div className="flex items-center justify-between gap-2">
                 <p className="font-semibold text-sm">
-                  {activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol}
+                  {activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol}
                 </p>
                 <BiDownArrow />
               </div>
@@ -586,14 +586,14 @@ const Swap = () => {
           <>
             <div className="flex items-center justify-between mt-2 text-sm">
               <p className="flex items-center justify-center text-slate-300">
-                1 {activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol} ={" "}
+                1 {activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol} ={" "}
                 {formatToken(perTokenOut as BigInt, tokenB_data?.decimals)}{" "}
-                {activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol}
+                {activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol}
               </p>
               <p className="flex items-center justify-center text-slate-300">
                 Expected Output :{" "}
                 {formatToken(amountOut as BigInt, tokenB_data?.decimals)}{" "}
-                {activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol}
+                {activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol}
               </p>
             </div>
 
@@ -601,18 +601,18 @@ const Swap = () => {
               {routeContent ? (
                 <p>
                   Route :{" "}
-                  {activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol}
+                  {activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol}
                   {routeContent.map((content, i) =>
                     i !== routeContent.length ? (
                       <span key={i}>
                         {" "}
                         &#8674;{" "}
-                        {content.address === WFTM ? "FTM" : content.symbol}
+                        {content.address === WFTM ? "MATIC" : content.symbol}
                       </span>
                     ) : (
                       <span key={i}>
                         {" "}
-                        {content.address === WFTM ? "FTM" : content.symbol}
+                        {content.address === WFTM ? "MATIC" : content.symbol}
                       </span>
                     )
                   )}
@@ -683,7 +683,7 @@ const Swap = () => {
               approvalA <
                 parseUnits(tokenInput.tokenA as "0", tokenA_data.decimals)
             ? `Approve ${
-                activeToken.tokenA === WFTM ? "FTM" : tokenA_data.symbol
+                activeToken.tokenA === WFTM ? "MATIC" : tokenA_data.symbol
               }`
             : "Swap"}
         </button>
@@ -712,9 +712,9 @@ const Swap = () => {
                             height={30}
                           />
                           <div className="text-sm">
-                            <p>{token.address === WFTM ? "FTM" : token.name}</p>
+                            <p>{token.address === WFTM ? "MATIC" : token.name}</p>
                             <p>
-                              {token.address === WFTM ? "FTM" : token.symbol}
+                              {token.address === WFTM ? "MATIC" : token.symbol}
                             </p>
                           </div>
                         </div>
@@ -732,9 +732,9 @@ const Swap = () => {
                             height={30}
                           />
                           <div className="text-sm">
-                            <p>{token.address === WFTM ? "FTM" : token.name}</p>
+                            <p>{token.address === WFTM ? "MATIC" : token.name}</p>
                             <p>
-                              {token.address === WFTM ? "FTM" : token.symbol}
+                              {token.address === WFTM ? "MATIC" : token.symbol}
                             </p>
                           </div>
                         </div>

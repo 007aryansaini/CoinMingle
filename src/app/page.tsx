@@ -8,7 +8,7 @@ export default function Home() {
           <h1 className="text-5xl font-thin text-slate-200 text-center">
             Experience the power of{" "}
             <span className="font-medium text-white">DeFi</span> with
-            <span className="font-medium text-white"> Fantom.</span>
+            <span className="font-medium text-white"> Metavoeux.</span>
           </h1>
           <p className="text-md text-slate-300 text-center mt-10">
             We have done it carefully and simply.
