@@ -1,22 +1,29 @@
 /// Mainnet Chain
-import { fantom } from "wagmi/chains";
+import { polygonMumbai } from "wagmi/chains";
+
 export const chains = [
   {
-    ...fantom,
-    rpcUrls: {
-      default: {
-        http: ["https://rpc.ftm.tools/"],
-      },
-      public: {
-        http: ["https://rpc.ftm.tools/"],
-      },
-    },
+    ...polygonMumbai,
+    
   },
 ];
-export const ACTIVE_CHAIN = fantom;
-export const EXPLORER = "https://ftmscan.com";
-export const CoinMingleRouter = "0xdAF48C05573B92F2B50d75E9A0Db91F5B83Ca359";
-export const WFTM = "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83";
+// export const chains = [
+//   {
+//     ...fantom,
+//     rpcUrls: {
+//       default: {
+//         http: ["https://rpc.ftm.tools/"],
+//       },
+//       public: {
+//         http: ["https://rpc.ftm.tools/"],
+//       },
+//     },
+//   },
+// ];
+export const ACTIVE_CHAIN = polygonMumbai;
+export const EXPLORER = "https://mumbai.polygonscan.com/";
+export const CoinMingleRouter = "0x66CB8d9209990A8021bF8Fd6d9812EF1746a0c38";
+export const WFTM = "0x9c3c9283d3e44854697cd22d3faa240cfb032889";
 
 /// Testnet Chain
 // import { fantomTestnet } from "wagmi/chains";

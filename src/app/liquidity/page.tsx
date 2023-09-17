@@ -548,7 +548,7 @@ const Liquidity = () => {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-sm">
                       {activeToken.tokenA === WFTM
-                        ? "FTM"
+                        ? "MATIC"
                         : tokenA_data?.symbol}
                     </p>
                     <BiDownArrow />
@@ -602,7 +602,7 @@ const Liquidity = () => {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold">
                       {activeToken.tokenB === WFTM
-                        ? "FTM"
+                        ? "MATIC"
                         : tokenB_data?.symbol}
                     </p>
                     <BiDownArrow />
@@ -650,7 +650,7 @@ const Liquidity = () => {
                   approvalA <
                     parseUnits(tokenInput.tokenA as "0", tokenA_data.decimals)
                 ? `Approve ${
-                    activeToken.tokenA === WFTM ? "FTM" : tokenA_data.symbol
+                    activeToken.tokenA === WFTM ? "MATIC" : tokenA_data.symbol
                   }`
                 : tokenB_data &&
                   activeToken.tokenB !== WFTM &&
@@ -671,17 +671,17 @@ const Liquidity = () => {
               <p>
                 {pairAddress === NULL_ADDRESS
                   ? `0 ${
-                      activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol
+                      activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol
                     } / ${
-                      activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol
+                      activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol
                     }`
                   : `${formatToken(
                       perTokenOut as BigInt,
                       tokenB_data?.decimals
                     )} ${
-                      activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol
+                      activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol
                     } / ${
-                      activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol
+                      activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol
                     }`}
               </p>
             </div>
@@ -689,7 +689,7 @@ const Liquidity = () => {
             <div className="p-4 py-6 bg-slate-200 bg-opacity-10 backdrop-blur-xl rounded-xl flex items-center justify-between text-sm text-slate-300">
               <p>
                 Reserve{" "}
-                {activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol}
+                {activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol}
               </p>
               {reservesFetched && typeof reservesAmounts !== "undefined" && (
                 <p>
@@ -710,7 +710,7 @@ const Liquidity = () => {
             <div className="p-4 py-6 bg-slate-200 bg-opacity-10 backdrop-blur-xl rounded-xl flex items-center justify-between text-sm text-slate-300">
               <p>
                 Reserve{" "}
-                {activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol}
+                {activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol}
               </p>
               {reservesFetched && typeof reservesAmounts !== "undefined" && (
                 <p>
@@ -732,12 +732,12 @@ const Liquidity = () => {
             <div className="flex flex-col items-center gap-2 p-4 py-3 bg-slate-200 bg-opacity-10 backdrop-blur-xl rounded-xl">
               <p>
                 {tokenInput.tokenA}{" "}
-                {activeToken.tokenA === WFTM ? "FTM" : tokenA_data?.symbol}
+                {activeToken.tokenA === WFTM ? "MATIC" : tokenA_data?.symbol}
               </p>
               <FaPlus />
               <p>
                 {tokenInput.tokenB}{" "}
-                {activeToken.tokenB === WFTM ? "FTM" : tokenB_data?.symbol}
+                {activeToken.tokenB === WFTM ? "MATIC" : tokenB_data?.symbol}
               </p>
             </div>
           </div>
@@ -795,10 +795,10 @@ const Liquidity = () => {
                             />
                             <div className="text-sm">
                               <p>
-                                {token.address === WFTM ? "FTM" : token.name}
+                                {token.address === WFTM ? "MATIC" : token.name}
                               </p>
                               <p>
-                                {token.address === WFTM ? "FTM" : token.symbol}
+                                {token.address === WFTM ? "MATIC" : token.symbol}
                               </p>
                             </div>
                           </div>
@@ -817,10 +817,10 @@ const Liquidity = () => {
                             />
                             <div className="text-sm">
                               <p>
-                                {token.address === WFTM ? "FTM" : token.name}
+                                {token.address === WFTM ? "MATIC" : token.name}
                               </p>
                               <p>
-                                {token.address === WFTM ? "FTM" : token.symbol}
+                                {token.address === WFTM ? "MATIC" : token.symbol}
                               </p>
                             </div>
                           </div>
